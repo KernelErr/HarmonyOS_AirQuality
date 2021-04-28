@@ -62,12 +62,13 @@ int mqttInit(void) {
         printf("[!] Failed to initialize MQTT clent.\n");
         return result;
     }
+    initLock = 1;
     return result;
 }
 
 int reportMQTT(CJ702_Data_Typedef data) {
     if (data.valid == 0) {
-        return 0;
+        return -3;
     }
     messageID++;
     /*
@@ -188,7 +189,7 @@ int reportMQTT(CJ702_Data_Typedef data) {
     string = cJSON_PrintUnformatted(payload);
     
     MQTTMessage mqttMessage;
-    mqttMessage.qos = QOS1;
+    mqttMessage.qos = QOS0;
     mqttMessage.retained = 0;
     mqttMessage.payload = (void *) string;
     mqttMessage.payloadlen = strlen(string);

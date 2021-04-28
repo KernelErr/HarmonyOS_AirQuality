@@ -15,19 +15,26 @@ static void mqttReportTask(void) {
     WifiConnect(WiFi_SSID, WiFi_PASSWORD);
     mqttInit();
     while (1) {
-        if (reportMQTT(CJ702_Data) < 0) {
-            printf("[!] Failed to report data.\n");
+        int result = reportMQTT(CJ702_Data);
+        if (result < 0) {
+            printf("[!] Failed to report data, errcode = %d.\n", result);
         } else {
-            printf("[*] Successfully reported data\n");
+            printf("[*] Successfully reported data.\n");
         }
         sleep(2);
     }
 }
 
 static void sensorReadTask(void) {
+    GpioInit();
+    IoSetFunc(WIFI_IOT_IO_NAME_GPIO_2, WIFI_IOT_IO_FUNC_GPIO_2_GPIO);
+    GpioSetDir(WIFI_IOT_IO_NAME_GPIO_2, WIFI_IOT_GPIO_DIR_OUT);
     cj702Init();
     while(1) {
-        cj702ReadData();
+        while (cj702ReadData() != 0) {
+            usleep(1500000);
+            printf("[!] Retrying to read data.\n");
+        }
         sleep(2);
     }
 }

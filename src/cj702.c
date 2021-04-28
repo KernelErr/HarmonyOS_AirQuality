@@ -3,6 +3,8 @@
 #include "cmsis_os2.h"
 #include "wifiiot_uart.h"
 #include "wifiiot_errno.h"
+#include "wifiiot_gpio.h"
+#include "wifiiot_gpio_ex.h"
 #include "cj702.h"
 #include "misc.h"
 
@@ -27,14 +29,30 @@ void cj702Init(void) {
     printf("[*] UART sucessfully initailized.\n");
 }
 
-void cj702ReadData(void) {
-    byte buff[17];
-    UartRead(WIFI_IOT_UART_IDX_1, buff, 17);
-    cj720PhaseData(buff);
+int cj702ReadData(void) {
+    byte buff[512];
+    UartRead(WIFI_IOT_UART_IDX_1, buff, 512);
+    int offset = 0;
+    for (; offset < 512; offset++) {
+        if (buff[offset] == 60) {
+            break;
+        }
+    }
+    if (offset >= 494) {
+        printf("[!] Invalid header data.\n");
+        CJ702_Data.valid = 0;
+    } else {
+        cj720PhaseData(buff + offset);
+    }
     if (CJ702_Data.valid != 0) {
         cj720Print(buff);
+        GpioSetOutputVal(WIFI_IOT_IO_NAME_GPIO_2, 1);
+        usleep(200000);
+        GpioSetOutputVal(WIFI_IOT_IO_NAME_GPIO_2, 0);
+        return 0;
     } else {
         printf("[!] Found invalid data.\n");
+        return -1;
     }
 }
 
